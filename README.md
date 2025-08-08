@@ -1,16 +1,5 @@
 # mlist
 
-A new Flutter project.
+this was literally built by ai. i could've done this myself but i have no time to maintain a project like this. all it does is display my up next (to read) manga from my [albert api](https://github.com/crxssed7/albert).
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+it also displays chapter counts for manga that have not finished releasing yet but it's slow asf.
