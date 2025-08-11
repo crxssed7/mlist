@@ -47,5 +47,13 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>fetch</string>
+		</array>
+		<key>BGTaskSchedulerPermittedIdentifiers</key>
+		<array>
+			<string>com.crxssed.mlist.refresh</string>
+		</array>
 	</dict>
 </plist>

@@ -3,8 +3,91 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:workmanager/workmanager.dart';
 
-void main() {
+const refreshTask = "refresh";
+
+void callbackDispatcher() {
+  Workmanager().executeTask((task, inputData) async {
+    switch (task) {
+      case refreshTask:
+        await refreshData();
+        break;
+    }
+    return Future.value(true);
+  });
+}
+
+Future<void> refreshData() async {
+  try {
+    final response = await http.get(Uri.parse(apiEndpoint));
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      final result = data
+          .map((item) {
+            final media = item['media'];
+            if (media == null) return null;
+
+            final title =
+                media['title']?['english'] ??
+                media['title']?['romaji'] ??
+                'No Title';
+            final imageUrl = media['coverImage']?['large'] ?? '';
+            final colorHex = media['coverImage']?['color'] ?? '#77DD77';
+            final chaptersRead = item['progress'] ?? 0;
+
+            double? totalChapters;
+            if (media['inferredChapterCount'] != null) {
+              totalChapters = media['inferredChapterCount'].toDouble();
+            } else if (media['comickMatch'] != null &&
+                media['comickMatch']['lastChapter'] != null) {
+              totalChapters = media['comickMatch']['lastChapter'].toDouble();
+            } else {
+              totalChapters = chaptersRead.toDouble();
+            }
+
+            if (totalChapters == null ||
+                totalChapters <= chaptersRead.toDouble()) {
+              return null;
+            }
+
+            final chaptersLeft = totalChapters - chaptersRead;
+
+            return {
+              'title': title,
+              'imageUrl': imageUrl,
+              'color': colorHex,
+              'chaptersRead': chaptersRead,
+              'totalChapters': totalChapters,
+              'chaptersLeft': chaptersLeft,
+            };
+          })
+          .whereType<Map<String, dynamic>>()
+          .toList();
+
+      result.sort(
+        (a, b) => (a['chaptersLeft'] as double).compareTo(
+          b['chaptersLeft'] as double,
+        ),
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(cacheKey, jsonEncode(result));
+    }
+  } catch (e) {
+    print('Error fetching data in background: $e');
+  }
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  Workmanager().initialize(callbackDispatcher);
+  Workmanager().registerPeriodicTask(
+    "1",
+    refreshTask,
+    frequency: const Duration(hours: 2),
+  );
   runApp(const MyApp());
 }
 
@@ -73,16 +156,13 @@ class _MangaListPageState extends State<MangaListPage> {
     final cachedString = prefs.getString(cacheKey);
     if (cachedString != null) {
       final List<dynamic> decoded = jsonDecode(cachedString);
-      setState(() {
-        _outdatedManga = List<Map<String, dynamic>>.from(decoded);
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _outdatedManga = List<Map<String, dynamic>>.from(decoded);
+          _loading = false;
+        });
+      }
     }
-  }
-
-  Future<void> _saveCache(String data) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(cacheKey, data);
   }
 
   Future<void> _refreshData({bool forceRefresh = false}) async {
@@ -90,78 +170,17 @@ class _MangaListPageState extends State<MangaListPage> {
     if (forceRefresh) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(cacheKey);
-      setState(() {
-        _outdatedManga = [];
-      });
+      if (mounted) {
+        setState(() {
+          _outdatedManga = [];
+        });
+      }
     }
 
-    //
-    final response = await http.get(Uri.parse(apiEndpoint));
+    await refreshData();
+    await _loadCache();
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-
-      final result = data
-          .map((item) {
-            final media = item['media'];
-            if (media == null) return null;
-
-            final title =
-                media['title']?['english'] ??
-                media['title']?['romaji'] ??
-                'No Title';
-            final imageUrl = media['coverImage']?['large'] ?? '';
-            final colorHex = media['coverImage']?['color'] ?? '#77DD77';
-            final chaptersRead = item['progress'] ?? 0;
-
-            double? totalChapters;
-            if (media['inferredChapterCount'] != null) {
-              totalChapters = media['inferredChapterCount'].toDouble();
-            } else if (media['comickMatch'] != null &&
-                media['comickMatch']['lastChapter'] != null) {
-              totalChapters = media['comickMatch']['lastChapter'].toDouble();
-            } else {
-              totalChapters = chaptersRead.toDouble();
-            }
-
-            if (totalChapters == null ||
-                totalChapters <= chaptersRead.toDouble()) {
-              return null;
-            }
-
-            final chaptersLeft = totalChapters - chaptersRead;
-
-            return {
-              'title': title,
-              'imageUrl': imageUrl,
-              'color': colorHex,
-              'chaptersRead': chaptersRead,
-              'totalChapters': totalChapters,
-              'chaptersLeft': chaptersLeft,
-            };
-          })
-          .whereType<Map<String, dynamic>>()
-          .toList();
-
-      result.sort(
-        (a, b) => (a['chaptersLeft'] as double).compareTo(
-          b['chaptersLeft'] as double,
-        ),
-      );
-
-      print('Sorted result: $result');
-
-      await _saveCache(jsonEncode(result));
-
-      setState(() {
-        _outdatedManga = result;
-        _loading = false;
-      });
-    } else {
-      setState(() => _loading = false);
-    }
-    try {} catch (e) {
-      print('Error fetching data: $e');
+    if (mounted) {
       setState(() => _loading = false);
     }
   }
