@@ -40,9 +40,9 @@ Future<void> refreshData() async {
             double? totalChapters;
             if (media['inferredChapterCount'] != null) {
               totalChapters = media['inferredChapterCount'].toDouble();
-            } else if (media['comickMatch'] != null &&
-                media['comickMatch']['lastChapter'] != null) {
-              totalChapters = media['comickMatch']['lastChapter'].toDouble();
+            } else if (media['mangaParkMatch'] != null &&
+                media['mangaParkMatch']['lastChapter'] != null) {
+              totalChapters = media['mangaParkMatch']['lastChapter'].toDouble();
             } else {
               totalChapters = chaptersRead.toDouble();
             }
