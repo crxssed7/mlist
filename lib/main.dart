@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'manga_list_page.dart';
+import 'comic_list_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,7 +13,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Manga Updates',
+      title: 'Up Next - Comics & Manga',
       theme: ThemeData(
         useMaterial3: true,
         colorSchemeSeed: const Color(0xFF8BA798),
@@ -33,18 +34,12 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = const [
-    MangaListPage(),
-    SizedBox.shrink(), // Volumes (empty for now)
-  ];
+  final List<Widget> _pages = const [MangaListPage(), ComicsListPage()];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (int index) {
