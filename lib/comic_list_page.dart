@@ -58,11 +58,6 @@ Future<void> refreshData() async {
           .whereType<Map<String, dynamic>>()
           .toList();
 
-      result.sort(
-        (a, b) =>
-            (a['issuesLeft'] as double).compareTo(b['issuesLeft'] as double),
-      );
-
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(cacheKey, jsonEncode(result));
     }
